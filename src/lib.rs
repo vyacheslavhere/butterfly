@@ -203,7 +203,7 @@ pub unsafe extern "C" fn poll_event() -> *mut String {
                         }
                         Some(code) => {
                             Box::into_raw(Box::new(String::from(
-                                format!("key_down_{}", code.into_i32())
+                                format!("key_down {}", code.into_i32())
                             )))
                         }
                     }
@@ -215,7 +215,7 @@ pub unsafe extern "C" fn poll_event() -> *mut String {
                         }
                         Some(code) => {
                             Box::into_raw(Box::new(String::from(
-                                format!("key_up_{}", code.into_i32())
+                                format!("key_up {}", code.into_i32())
                             )))
                         }
                     }
@@ -232,22 +232,22 @@ pub unsafe extern "C" fn poll_event() -> *mut String {
                 }
                 Event::MouseMotion { x, y, .. } => {
                     Box::into_raw(Box::new(String::from(
-                        format!("mouse_motion [{};{}]", x, y)
+                        format!("mouse_motion {} {}", x, y)
                     )))
                 }
                 Event::MouseButtonDown { x, y, mouse_btn, .. } => {
                     Box::into_raw(Box::new(String::from(
-                        format!("mouse_button_down {:?} [{};{}]", mouse_btn, x, y),
+                        format!("mouse_button_down {:?} {} {}", mouse_btn, x, y),
                     )))
                 }
                 Event::MouseButtonUp { x, y, mouse_btn, .. } => {
                     Box::into_raw(Box::new(String::from(
-                        format!("mouse_button_up {:?} [{};{}]", mouse_btn, x, y),
+                        format!("mouse_button_up {:?} {} {}", mouse_btn, x, y),
                     )))
                 }
                 Event::MouseWheel { x, y, mouse_x, mouse_y, .. } => {
                     Box::into_raw(Box::new(String::from(
-                        format!("mouse_wheel [{};{}] [{};{}]", x, y, mouse_x, mouse_y),
+                        format!("mouse_wheel {} {} {} {}", x, y, mouse_x, mouse_y),
                     )))
                 }
                 _ => {
