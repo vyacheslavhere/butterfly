@@ -3,7 +3,8 @@
 #![allow(unsafe_op_in_unsafe_fn)]
 
 // imports
-use sdl2::{Sdl, VideoSubsystem};
+use sdl2::{EventPump, Sdl, VideoSubsystem};
+use sdl2::event::Event;
 use sdl2::image::{InitFlag, LoadTexture, Sdl2ImageContext};
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
@@ -16,7 +17,8 @@ pub struct SDL {
     pub canvas: *mut sdl2::render::Canvas<sdl2::video::Window>,
     pub texture_creator: *mut sdl2::render::TextureCreator<sdl2::video::WindowContext>,
     pub textures: *mut Vec<Texture<'static>>,
-    pub image_ctx: *mut Sdl2ImageContext
+    pub image_ctx: *mut Sdl2ImageContext,
+    pub event_pump: *mut EventPump,
 }
 unsafe impl Send for SDL {}
 unsafe impl Sync for SDL {}
@@ -28,7 +30,8 @@ pub static mut SDL2: SDL = SDL {
     canvas: std::ptr::null_mut(),
     texture_creator: std::ptr::null_mut(),
     textures: std::ptr::null_mut(),
-    image_ctx: std::ptr::null_mut()
+    image_ctx: std::ptr::null_mut(),
+    event_pump: std::ptr::null_mut(),
 };
 
 /// Init
@@ -86,6 +89,15 @@ pub unsafe extern "C" fn init() {
             panic!("[butterfly] sdl2::image::init() : error: {:?}", err);
         }
     }
+    println!("[butterfly] init sdl2 event pump.");
+    match (*SDL2.sdl).event_pump() {
+        Ok(ok) => {
+            SDL2.event_pump = Box::into_raw(Box::new(ok))
+        }
+        Err(err) => {
+            panic!("[butterfly] sdl2::event_pump() : error: {:?}", err);
+        }
+    }
     println!("[butterfly] all done.");
 
 }
@@ -98,7 +110,6 @@ pub unsafe extern "C" fn clear_screen() {
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn redraw_screen() {
-    println!("[butterfly] redraw.");
     (*SDL2.canvas).present();
 }
 
@@ -146,4 +157,103 @@ pub unsafe extern "C" fn free_resources() {
     free_ptr!(image_ctx);
     free_ptr!(video_ctx);
     free_ptr!(sdl);
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn poll_event() -> *mut String {
+    match (*SDL2.event_pump).poll_event() {
+        None => {
+            Box::into_raw(Box::new(
+                String::from("nop")
+            ))
+        }
+        Some(event) => {
+            match event {
+                Event::Quit { .. } => {
+                    Box::into_raw(Box::new(String::from("app_quit")))
+                }
+                Event::AppTerminating { .. } => {
+                    Box::into_raw(Box::new(String::from("app_terminating")))
+                }
+                Event::AppLowMemory { .. } => {
+                    Box::into_raw(Box::new(String::from("app_low_memory")))
+                }
+                Event::AppWillEnterBackground { .. } => {
+                    Box::into_raw(Box::new(String::from("app_will_enter_background")))
+                }
+                Event::AppDidEnterBackground { .. } => {
+                    Box::into_raw(Box::new(String::from("app_did_enter_background")))
+                }
+                Event::AppWillEnterForeground { .. } => {
+                    Box::into_raw(Box::new(String::from("app_will_enter_foreground")))
+                }
+                Event::AppDidEnterForeground { .. } => {
+                    Box::into_raw(Box::new(String::from("app_did_enter_foreground")))
+                }
+                Event::Display { .. } => {
+                    Box::into_raw(Box::new(String::from("app_display")))
+                }
+                Event::Window { .. } => {
+                    Box::into_raw(Box::new(String::from("app_window")))
+                }
+                Event::KeyDown { keycode, .. } => {
+                    match keycode {
+                        None => {
+                            Box::into_raw(Box::new(String::from("undefined_key_down")))
+                        }
+                        Some(code) => {
+                            Box::into_raw(Box::new(String::from(
+                                format!("key_down_{}", code.into_i32())
+                            )))
+                        }
+                    }
+                }
+                Event::KeyUp { keycode, .. } => {
+                    match keycode {
+                        None => {
+                            Box::into_raw(Box::new(String::from("undefined_key_up")))
+                        }
+                        Some(code) => {
+                            Box::into_raw(Box::new(String::from(
+                                format!("key_up_{}", code.into_i32())
+                            )))
+                        }
+                    }
+                }
+                Event::TextEditing { text, .. } => {
+                    Box::into_raw(Box::new(String::from(
+                        format!("edit_text {}", text)
+                    )))
+                }
+                Event::TextInput { text, .. } => {
+                    Box::into_raw(Box::new(String::from(
+                        format!("input_text {}", text)
+                    )))
+                }
+                Event::MouseMotion { x, y, .. } => {
+                    Box::into_raw(Box::new(String::from(
+                        format!("mouse_motion [{};{}]", x, y)
+                    )))
+                }
+                Event::MouseButtonDown { x, y, mouse_btn, .. } => {
+                    Box::into_raw(Box::new(String::from(
+                        format!("mouse_button_down {:?} [{};{}]", mouse_btn, x, y),
+                    )))
+                }
+                Event::MouseButtonUp { x, y, mouse_btn, .. } => {
+                    Box::into_raw(Box::new(String::from(
+                        format!("mouse_button_up {:?} [{};{}]", mouse_btn, x, y),
+                    )))
+                }
+                Event::MouseWheel { x, y, mouse_x, mouse_y, .. } => {
+                    Box::into_raw(Box::new(String::from(
+                        format!("mouse_wheel [{};{}] [{};{}]", x, y, mouse_x, mouse_y),
+                    )))
+                }
+                _ => {
+                    Box::into_raw(Box::new(String::from("nope")))
+                }
+            }
+        }
+    }
 }
