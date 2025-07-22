@@ -7,4 +7,4 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-piston_window = "0.132.0"
+sdl2 = { version = "0.38.0", features = ["image"] }
