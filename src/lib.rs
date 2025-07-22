@@ -128,3 +128,22 @@ pub unsafe extern "C" fn draw_texture(id: usize, x: i32, y: i32, width: u32, hei
         _ => {}
     }
 }
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn free_resources() {
+    macro_rules! free_ptr {
+        ($field:ident) => {
+            if !SDL2.$field.is_null() {
+                drop(Box::from_raw(SDL2.$field));
+                SDL2.$field = std::ptr::null_mut();
+            }
+        };
+    }
+
+    free_ptr!(textures);
+    free_ptr!(texture_creator);
+    free_ptr!(canvas);
+    free_ptr!(image_ctx);
+    free_ptr!(video_ctx);
+    free_ptr!(sdl);
+}
