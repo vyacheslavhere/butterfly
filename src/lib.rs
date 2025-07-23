@@ -7,7 +7,7 @@ use sdl2::{EventPump, Sdl, VideoSubsystem};
 use sdl2::event::Event;
 use sdl2::image::{InitFlag, LoadTexture, Sdl2ImageContext};
 use sdl2::pixels::Color;
-use sdl2::rect::Rect;
+use sdl2::rect::{Point, Rect};
 use sdl2::render::Texture;
 
 /// Sdl
@@ -157,6 +157,46 @@ pub unsafe extern "C" fn free_resources() {
     free_ptr!(image_ctx);
     free_ptr!(video_ctx);
     free_ptr!(sdl);
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn draw_rect(r: u8, g: u8, b: u8, x: i32, y: i32, width: u32, height: u32) {
+    (*SDL2.canvas).set_draw_color(Color::RGB(r, g, b));
+    let result = (*SDL2.canvas).draw_rect(Rect::new(x, y, width, height));
+    match result {
+        Err(e) => panic!("[butterfly] failed to draw rect: {}", e),
+        _ => {}
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn draw_line(r: u8, g: u8, b: u8, x: i32, y: i32, x2: i32, y2: i32) {
+    (*SDL2.canvas).set_draw_color(Color::RGB(r, g, b));
+    let result = (*SDL2.canvas).draw_line(Point::new(x, y), Point::new(x2, y2));
+    match result {
+        Err(e) => panic!("[butterfly] failed to draw line: {}", e),
+        _ => {}
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn draw_filled_rect(r: u8, g: u8, b: u8, x: i32, y: i32, width: u32, height: u32) {
+    (*SDL2.canvas).set_draw_color(Color::RGB(r, g, b));
+    let result = (*SDL2.canvas).fill_rect(Rect::new(x, y, width, height));
+    match result {
+        Err(e) => panic!("[butterfly] failed to draw rect: {}", e),
+        _ => {}
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn draw_point(r: u8, g: u8, b: u8, x: i32, y: i32) {
+    (*SDL2.canvas).set_draw_color(Color::RGB(r, g, b));
+    let result = (*SDL2.canvas).draw_point(Point::new(x, y));
+    match result {
+        Err(e) => panic!("[butterfly] failed to draw rect: {}", e),
+        _ => {}
+    }
 }
 
 #[unsafe(no_mangle)]
