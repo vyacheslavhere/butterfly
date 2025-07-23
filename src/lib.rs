@@ -9,6 +9,7 @@ use sdl2::image::{InitFlag, LoadTexture, Sdl2ImageContext};
 use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
 use sdl2::render::Texture;
+use sdl2::ttf::{Font, Sdl2TtfContext};
 
 /// Sdl
 pub struct SDL {
@@ -18,6 +19,8 @@ pub struct SDL {
     pub texture_creator: *mut sdl2::render::TextureCreator<sdl2::video::WindowContext>,
     pub textures: *mut Vec<Texture<'static>>,
     pub image_ctx: *mut Sdl2ImageContext,
+    pub ttf_ctx: *mut Sdl2TtfContext,
+    pub fonts: *mut Vec<Font<'static, 'static>>,
     pub event_pump: *mut EventPump,
 }
 unsafe impl Send for SDL {}
@@ -31,6 +34,8 @@ pub static mut SDL2: SDL = SDL {
     texture_creator: std::ptr::null_mut(),
     textures: std::ptr::null_mut(),
     image_ctx: std::ptr::null_mut(),
+    ttf_ctx: std::ptr::null_mut(),
+    fonts: std::ptr::null_mut(),
     event_pump: std::ptr::null_mut(),
 };
 
@@ -89,6 +94,17 @@ pub unsafe extern "C" fn init() {
             panic!("[butterfly] sdl2::image::init() : error: {:?}", err);
         }
     }
+    println!("[butterfly] init sdl2 ttf ctx.");
+    match sdl2::ttf::init() {
+        Ok(ok) => {
+            SDL2.ttf_ctx = Box::into_raw(Box::new(ok));
+        }
+        Err(err) => {
+            panic!("[butterfly] sdl2::ttf::init() : error: {:?}", err);
+        }
+    }
+    let fonts: Vec<Font> = Vec::new();
+    SDL2.fonts = Box::into_raw(Box::new(fonts));
     println!("[butterfly] init sdl2 event pump.");
     match (*SDL2.sdl).event_pump() {
         Ok(ok) => {
@@ -126,6 +142,19 @@ pub unsafe extern "C" fn load_texture(raw_path: *mut String) -> usize {
         }
     }
 }
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn load_font(raw_path: *mut String, size: u16) -> usize {
+    let path = (*raw_path).clone();
+    match (*SDL2.ttf_ctx).load_font(path, size) {
+        Ok(font) => {
+            (*SDL2.fonts).push(font);
+            (*SDL2.fonts).len() - 1
+        }
+        Err(error) => {
+            panic!("[butterfly] failed to load font : {}", error);
+        }
+    }
+}
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn draw_texture(id: usize, x: i32, y: i32, width: u32, height: u32) {
@@ -139,6 +168,30 @@ pub unsafe extern "C" fn draw_texture(id: usize, x: i32, y: i32, width: u32, hei
         _ => {}
     }
 }
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn force_draw_text(font_id: usize, r: u8, g: u8, b: u8, x: i32, y: i32, text: *mut String) {
+    let surface = (*SDL2.fonts)[font_id]
+        .render((*text).clone().as_str())
+        .blended(Color::RGB(r, g, b))
+        .map_err(|e| panic!("[butterfly] failed to render text: {}", e))
+        .unwrap();
+
+    let texture = (*SDL2.texture_creator).create_texture_from_surface(
+        &surface,
+    ).map_err(|e| panic!("[butterfly] failed to create texture from surface: {}", e)).unwrap();
+
+    let result = (*SDL2.canvas).copy(
+        &texture,
+        None,
+        Some(Rect::new(x, y, surface.width(), surface.height())),
+    );
+    match result {
+        Err(e) => panic!("[butterfly] failed to copy texture to canvas: {}", e),
+        _ => {}
+    }
+}
+
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn free_resources() {

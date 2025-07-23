@@ -7,4 +7,4 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-sdl2 = { version = "0.38.0", features = ["image"] }
+sdl2 = { version = "0.38.0", features = ["image", "ttf"] }
